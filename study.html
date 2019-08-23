@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>D3JS入门学习示例</title>
+</head>
+<body>
+<div id="p">
+    <p>HTML输出 Hello World !</p>
+    <p id="javascript">HTML输出 Hello World !</p>
+    <a id="d3js" href="http://d3.decembercafe.org/" target="_blank">HTML输出 Hello World !</a>
+    <p class="datum">HTML输出 Hello World !</p>
+    <p class="datum">HTML输出 Hello World !</p>
+    <p class="datum">HTML输出 Hello World !</p>
+    <p class="data">HTML输出 Hello World !</p>
+    <p class="data">HTML输出 Hello World !</p>
+    <p class="data">HTML输出 Hello World !</p>
+    <svg id="svg" style="background-color: aqua">
+        <rect>svg</rect>
+        <!-- SVG 的分组元素 g，意思是 group。此元素是将其他元素进行组合的容器。-->
+        <g>
+            <!-- 第一个刻度 -->
+            <g>
+                <line x1="10" y1="10" x2="50" y2="10" style="stroke:red;stroke-width:2px;"></line>
+                <!-- 第一个刻度的直线 -->
+                <text x="30" y="30" style="color: red;">0</text>   <!-- 第一个刻度的文字 -->
+            </g>
+            <!-- 第二个刻度 -->
+            <g>
+                <line x1="50" y1="10" x2="90" y2="10" style="stroke:red;stroke-width:2px;"></line>   <!-- 第二个刻度的直线 -->
+                <text x="70" y="30" style="color: red;">1</text>   <!-- 第二个刻度的文字 -->
+            </g>
+            <!-- 坐标轴的轴线 -->
+            <path></path>
+        </g>
+    </svg>
+</div>
+<script type="text/javascript" charset="utf-8">
+    let javascript = document.getElementById("javascript");
+    javascript.innerHTML = " 用 JavaScript 来输出";
+</script>
+
+<!--
+使用 d3.select() 或 d3.selectAll() 选择元素后返回的对象，就是选择集。
+d3.select()：是选择所有指定元素的第一个
+d3.selectAll()：是选择指定元素的全部
+datum()：绑定一个数据到选择集上
+data()：绑定一个数组到选择集上，数组的各项值分别与选择集的各元素绑定
+append()：在选择集末尾插入元素
+insert()：在选择集前面插入元素
+d3.svg.axis()：D3 中坐标轴的组件，能够在 SVG 中生成组成坐标轴的元素。
+scale()：指定比例尺。
+orient()：指定刻度的朝向，bottom 表示在坐标轴的下方显示。
+ticks()：指定刻度的数量。
+transition()：启动过渡效果。
+duration()：指定过渡的持续时间，单位为毫秒。
+delay()：指定延迟的时间，表示一定时间后才开始转变，单位同样为毫秒
+ease("bounce")：指定过渡的方式，
+    linear：普通的线性变化
+    circle：慢慢地到达变换的最终状态
+    elastic：带有弹跳的到达最终状态
+    bounce：在最终状态处弹跳几次
+-->
+<script type="text/javascript" src="javascript/lzf.min.js" charset="utf-8"></script>
+<script type="text/javascript" charset="utf-8">
+    let body = d3.select("body")
+    //选择<body>中的d3js，其文本内容为 http://d3.decembercafe.org，选择集保存在变量 d3js 中
+    let d3js = body.select("#p").select("#d3js").text("http://d3.decembercafe.org/");
+    //修改段落的颜色和字体大小。链式语法：能够连续不断地调用函数。
+    d3js.style("color", "red").style("font-size", "5px");
+
+    //假设有一字符串 China，要将此字符串分别与三个段落元素绑定
+    let str = "China";
+    let datum = body.select("#p").selectAll(".datum");
+    //function(d, i)。当选择集需要使用被绑定的数据时，常需要这么使用。其包含两个参数，其中：d 代表数据，也就是与某元素绑定的数据；i 代表索引，代表数据的索引号，从 0 开始
+    datum.datum(str).text(function (d, i) {
+        return "第 " + i + " 个元素绑定的数据是 " + d;
+    });
+    let dataset = ["I like dogs", "I like cats", "I like snakes"];
+    let data = body.select("#p").selectAll(".data");
+    data.data(dataset).text(function (d) {
+        return d;
+    });
+
+    body.select("#p").insert("p", "#d3js").text("在 body 中 id 为 d3js 的元素前添加一个段落元素。");
+    body.select("#p").append("p").text("在 body 中 id 为 p的元素末尾添加一个段落元素。");
+    // body.select("#p").select("#d3js").remove(); //删除指定 id 的元素。
+
+    /***********************************************************条形统计图开始***************************************************************/
+    console.log("LZF-获取id为p的元素的高度：", body.select("#p").style("height"));
+    dataset = [250, 210, 170, 130, 90, 210, 350, 90];  //数据（表示矩形的宽度）
+    let height = 310;   //画布的高度
+    let padding = 20;   //画布的四周空白
+    let rectWidth = 25;   //每个矩形所占的像素宽度(包括空白)
+    let width = dataset.length * rectWidth + padding * 4;  //画布的宽度
+
+    let svg = body.append("svg")          //添加一个svg元素
+        .attr("width", width)       //设定宽度
+        .attr("height", height)
+        .style("background", "steelblue");    //设定高度
+
+    let max = d3.max(dataset);
+    console.log("LZF-d3.range(dataset.length)", d3.range(dataset.length));
+    let xOrdinal = d3.scale.ordinal() //X轴比例尺；序数比例尺
+        .domain(d3.range(dataset.length))
+        .rangeRoundBands([0, rectWidth * dataset.length + 7]);
+    //d3.scale.linear() 的返回值，是可以当做函数来使用的
+    let linear = d3.scale.linear() //Y轴比例尺；线性比例尺
+        .domain([0, max])
+        .range([260, 0]);
+    console.log("LZF-线性比例尺：", linear(90));//返回 166.4
+    console.log("LZF-线性比例尺：", linear(250));//返回 0
+
+    let xAxis = d3.svg.axis() //D3 中坐标轴的组件，能够在 SVG 中生成组成坐标轴的元素。
+        .scale(xOrdinal)      //指定比例尺
+        .orient("bottom");   //指定刻度的方向，bottom 表示在坐标轴的下方显示。
+    let axis = d3.svg.axis() //D3 中坐标轴的组件，能够在 SVG 中生成组成坐标轴的元素。
+        .scale(linear)      //指定比例尺
+        .orient("left")   //指定刻度的方向，bottom 表示在坐标轴的下方显示。
+        .ticks(7);          //指定刻度的数量
+    // axis(svg.append(g));与svg.append("g").call(axis);是相等的。
+    svg.append("g") //在 SVG 中添加一个分组元素
+        .attr("class", "axis")
+        .attr("transform", "translate(" + 2 * padding + "," + (height - padding - 7) + ")") //坐标轴的位置，可以通过 transform 属性来设定。
+        .call(xAxis); //在 D3 中，call() 的参数是一个函数axis。调用之后，将当前的选择集[svg.append("g")]作为参数传递给此[axis]函数。
+    svg.append("g") //在 SVG 中添加一个分组元素
+        .attr("class", "axis")
+        .attr("transform", "translate(" + 2 * padding + "," + padding + ")") //坐标轴的位置，可以通过 transform 属性来设定。
+        .call(axis); //在 D3 中，call() 的参数是一个函数axis。调用之后，将当前的选择集[svg.append("g")]作为参数传递给此[axis]函数。
+    //x - 矩形左上角的 x 坐标；y - 矩形左上角的 y 坐标；width - 矩形的宽度；height - 矩形的高度
+    svg.selectAll("rect")//选择svg内所有的矩形
+        .data(dataset) //绑定数组
+        .enter()//指定选择集的enter部分
+        .append("rect")//添加足够数量的矩形元素
+        .attr("x", function (d, i) {
+            return i * rectWidth + 2 * padding + 5;
+        })
+        .attr("y", function (d) {
+            return 260;
+        })
+        .attr("width", rectWidth - 2)
+        .attr("height", function (d) {
+            return 0;
+        })
+        .on("mouseover", function () {
+            d3.select(this)
+                .attr("fill", "yellow");
+        })
+        .on("mouseout", function () {
+            d3.select(this)
+                .transition()
+                .duration(500)
+                .attr("fill", "red");
+        })
+        .transition()
+        .delay(function (d, i) {
+            return i * 200;
+        })
+        .duration(2000)
+        .ease("bounce")
+        .attr("y", function (d) {
+            return linear(d) + padding;
+        })
+        .attr("height", function (d) {
+            return 260 - linear(d);
+        })
+        .attr("fill", "red");
+    //添加文字元素
+    svg.selectAll(".MyText")
+        .data(dataset)
+        .enter()
+        .append("text")
+        .attr("class", "MyText")
+        .attr("x", function (d, i) {
+            return i * rectWidth + 3 * padding - 5;
+        })
+        .attr("y", function (d) {
+            return (height - padding - 15);
+        })
+        .text(function (d) {
+            return d;
+        })
+        .style("opacity", "0")
+        .transition()
+        .delay(function (d, i) {
+            return i * 200;
+        })
+        .duration(2000)
+        .ease("bounce")
+        .attr("y", function (d) {
+            return linear(d) + 2 * padding;
+        })
+        .style("opacity", "1");
+    /************************************************************条形统计图结束**************************************************************/
+
+
+    let index = [0, 1, 2, 3, 4];
+    let color = ["red", "blue", "green", "yellow", "black"];
+    let ordinal = d3.scale.ordinal()
+        .domain(index)
+        .range(color);
+    console.log("LZF-序数比例尺：", ordinal(0));//返回 red
+    console.log("LZF-序数比例尺：", ordinal(2));//返回 green
+
+    /**
+     * click - 鼠标单击某元素时，相当于 mousedown 和 mouseup 组合在一起。
+     * mouseover - 光标放在某元素上。
+     * mouseout - 光标从某元素上移出来时。
+     * mousemove - 鼠标被移动的时候。
+     * mousedown - 鼠标按钮被按下。
+     * mouseup - 鼠标按钮被松开。
+     *
+     * keydown - 当用户按下任意键时触发，按住不放会重复触发此事件。该事件不会区分字母的大小写，例如“A”和“a”被视为一致。
+     * keypress - 当用户按下字符键（大小写字母、数字、加号、等号、回车等）时触发，按住不放会重复触发此事件。该事件区分字母的大小写。
+     * keyup - 当用户释放键时触发，不区分字母的大小写。
+     *
+     * touchstart - 当触摸点被放在触摸屏上时。
+     * touchmove - 当触摸点在触摸屏上移动时。
+     * touchend - 当触摸点从触摸屏上拿开时
+     */
+    body.select("#svg").on("click", function () {
+        console.log("LZF-你单击了 body 中 id 为 p的元素中的svg", d3.event);
+    });
+
+
+    /************************************************************饼图开始**************************************************************/
+    /**
+     * 布局（数据转换）：n 个整数被转换成了 n 个对象（Object）:每个对象都有起始角度（startAngle）和终止角度（endAngle），还有原数据（属性名称为 data）
+     * 切记：布局不是要直接绘图，而是为了得到绘图所需的数据。
+     */
+    let pie = d3.layout.pie();
+    let piedata = pie(dataset);
+    console.log("LZF-piedata", piedata);
+    let outerRadius = 130; //外半径
+    let innerRadius = 20; //内半径，为0则中间没有空白
+    let arc = d3.svg.arc()  //弧生成器弧返回的结果赋值给 let arc 。此时，arc 可以当做一个函数使用，把 piedata 作为参数传入，即可得到路径值。
+        .innerRadius(innerRadius)   //设置内半径
+        .outerRadius(outerRadius);  //设置外半径
+    let svgPie = body.append("svg")          //添加一个svg元素
+        .attr("width", width)       //设定宽度
+        .attr("height", height)
+        .style("background", "steelblue");    //设定高度
+    let category10 = d3.scale.category10();   //有十种颜色的颜色比例尺。是一个颜色比例尺，它能根据传入的索引号获取相应的颜色值。
+    //在 <svg> 里添加足够数量的分组元素（g），每一个分组用于存放一段弧的相关元素。
+    let arcs = svgPie.selectAll("g")
+        .data(piedata)
+        .enter()
+        .append("g")
+        .attr("transform", "translate(" + (width / 2) + "," + (height / 2) + ")");
+    //因为 arcs 是同时选择了足够数量的<g>元素的选择集，所以调用append("path") 后，每个 <g> 中都有 <path> 。对每个 <g> 元素，添加 <path> 。
+    arcs.append("path")
+        .attr("fill", function (d, i) {
+            return category10(i);
+        })
+        .attr("d", function (d) { //piedata的d
+            console.log("LZF-调用弧生成器", d);
+            return arc(d);   //调用弧生成器，得到路径值
+        })
+        .attr("opacity", "0")
+        .transition()
+        .delay(function (d, i) {
+            return i * 200;
+        })
+        .duration(2000)
+        .ease("linear")
+        .style("opacity", "1");
+    //每一个弧线中心添加文本。
+    arcs.append("text")
+        .attr("transform", function (d) {
+            return "translate(" + arc.centroid(d) + ")";
+        })
+        .attr("text-anchor", "middle")
+        .text(function (d) {
+            return d.data;
+        })
+        .attr("opacity", "0")
+        .transition()
+        .delay(function (d, i) {
+            return i * 200;
+        })
+        .duration(2000)
+        .ease("linear")
+        .style("opacity", "1");
+    ;
+    /************************************************************饼图结束**************************************************************/
+</script>
+<style>
+    /*设定坐标轴的样式和位置*/
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: black;
+        shape-rendering: crispEdges;
+    }
+
+    .axis text {
+        font-family: sans-serif;
+        font-size: 11px;
+    }
+
+    .MyText {
+        fill: white;
+        text-anchor: middle;
+        font-size: 10px;
+    }
+</style>
+</body>
+</html>

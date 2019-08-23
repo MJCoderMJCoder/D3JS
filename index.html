@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>纸纷飞</title>
+    <style type="text/css">
+        #imgParent {
+            display: none;
+        }
+
+        #buttons {
+            position: relative;
+            text-align: center;
+            display: block;
+        }
+
+        #imgInput {
+            position: relative;
+            text-align: center;
+            display: block;
+            margin: 10px;
+            padding: 10px;
+        }
+
+        #chart {
+            position: relative;
+            top: 20px;
+            text-align: center;
+        }
+
+        #msg {
+            display: block;
+            margin: 10px;
+            font-family: sans-serif;
+            font-size: 15px;
+
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div id='imgInput'>
+        <h4>（测试版本，不代表最终品质）</h4>
+        <hr/>
+        <h5>选择一个你喜欢的：
+            <select id="imgValue" onchange="checkField(this.value)">
+                <optgroup label="boy">
+                    <option value="luhan">纸纷飞</option>
+                    <option value="luhan">鹿晗</option>
+                    <option value="huge">胡歌</option>
+                </optgroup>
+                <optgroup label="girl">
+                    <option value="gaoyuan">高圆圆</option>
+                    <option value="yuner">林允儿</option>
+                </optgroup>
+            </select>
+            &nbsp;&nbsp;&nbsp;或是：<input type="file" onchange="onFileSelected(event)" value="选择一张图片"></h5>
+    </div>
+    <div id="buttons">
+        <!--<button id="slider" onclick="setMode('slider')"
+                style="background-color:rgb(255, 255, 255); visibility: visible">
+            自动滑块模式
+        </button>
+        <button id="play" onclick="setMode('play')" style="background-color:rgb(150, 236, 241); visibility: visible">
+            游戏模式
+        </button>-->
+        <p id='msg'>点击圆圈，最后有惊喜彩蛋</p>
+    </div>
+    <div id="imgParent">
+        <img id="myimage">
+    </div>
+    <div id="chart"></div>
+</div>
+
+
+<script type="text/javascript" src="javascript/lzf.min.js" charset="utf-8"></script>
+<script type="text/javascript" src="javascript/sliding_bar.js" charset="utf-8"></script>
+<script type="text/javascript" src="javascript/imageMap.js" charset="utf-8"></script>
+<script>
+    var imgtag = document.getElementById("myimage");
+    //Setting Default Image, you can load any image using input box.
+    imgtag.src = "image/3a39e61f1908424f8b593728d2a33409_th.png";
+    imgtag.onload = render;
+    var imageMap = d3.imageMap()
+        .setMode('play')
+        .setImageSize([512, 512]);
+
+    function checkField(val) {
+        imgtag.src = "image/" + val + ".jpg";
+        render();
+    }
+
+    function setMode(_) {
+        d3.select(_ === 'play' ? '#slider' : '#play').style('background-color', 'rgb(255, 255, 255)')
+        d3.select('#' + _).style('background-color', 'rgb(150, 236, 241)')
+        if (_ == 'play')
+        // d3.select('#msg').style('display', 'block');
+            d3.select('#msg').html("点击圆圈，最后有惊喜彩蛋");
+        else
+        // d3.select('#msg').style('display', 'none');
+            d3.select('#msg').html('滑动滑块（滑块在底部），最后有惊喜彩蛋');
+        imageMap.setMode(_);
+        render();
+    }
+
+    function onFileSelected(event) {
+        var selectedFile = event.target.files[0];
+        var reader = new FileReader();
+        imgtag.title = selectedFile.name;
+
+        reader.onload = function (event) {
+            imgtag.src = event.target.result;
+        };
+        reader.readAsDataURL(selectedFile);
+    }
+
+    function render() {
+        imageMap.buildCanvas();
+        d3.select('#chart').selectAll('svg').remove();
+        var svg = d3.select('#chart')
+            .append('svg')
+            .call(imageMap);
+    }
+</script>
+</body>
+</html>
